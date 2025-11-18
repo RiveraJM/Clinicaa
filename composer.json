@@ -1,6 +1,6 @@
 {
-  "name": "clinica",
-  "description": "Sistema de clínica - backend PHP",
+  "name": "clinica/proyecto",
+  "description": "Sistema backend PHP",
   "type": "project",
   "require": {
     "php": ">=8.0"
