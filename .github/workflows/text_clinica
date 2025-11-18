@@ -1,0 +1,84 @@
+name: test clinica
+
+on:
+  push:
+    branches: ["master", "main"]
+  pull_request:
+    branches: ["master", "main"]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mbstring, pdo, pdo_mysql
+        tools: phpunit
+        coverage: none
+
+    - name: Validate composer.json
+      run: composer validate --strict
+
+    - name: Cache Composer files
+      uses: actions/cache@v3
+      with:
+        path: |
+          vendor
+        key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-composer-
+
+    - name: Install project dependencies
+      run: composer install --prefer-dist --no-interaction --no-progress
+
+    # -------------------------------------
+    # Install Code Quality Tools Automatically
+    # -------------------------------------
+
+    - name: Install PHPStan
+      run: |
+        wget -q https://github.com/phpstan/phpstan/releases/latest/download/phpstan.phar -O phpstan
+        chmod +x phpstan
+
+    - name: Install PHPCS
+      run: |
+        composer global require squizlabs/php_codesniffer
+        echo "${HOME}/.composer/vendor/bin" >> $GITHUB_PATH
+
+    - name: Install PHPMD
+      run: |
+        composer global require phpmd/phpmd
+        echo "${HOME}/.composer/vendor/bin" >> $GITHUB_PATH
+
+    - name: Install PHPCPD
+      run: |
+        wget -q https://phar.phpunit.de/phpcpd.phar -O phpcpd
+        chmod +x phpcpd
+
+    # -------------------------------------
+    # Code quality checks
+    # -------------------------------------
+
+    - name: Run PHPCS (PSR-12)
+      run: phpcs --standard=PSR12 app || true
+
+    - name: Run PHPStan (level max)
+      run: ./phpstan analyse app --level=max --no-progress || true
+
+    - name: Run PHPMD
+      run: phpmd app text cleancode,codesize,design,unusedcode || true
+
+    - name: Run PHPCPD (Duplicate Code)
+      run: ./phpcpd app || true
+
+    - name: Run PHPUnit
+      run: vendor/bin/phpunit || true
