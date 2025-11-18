@@ -19,7 +19,7 @@ jobs:
   # JOB 1: CI — Validación profesional del proyecto PHP
   # ===========================================================
   ci:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest 
 
     steps:
     - name: Checkout Repo
