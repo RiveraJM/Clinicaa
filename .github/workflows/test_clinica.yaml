@@ -1,4 +1,4 @@
-name: CI Clinica
+name: CI/CD Clinica
 
 on:
   push:
@@ -15,21 +15,18 @@ env:
   COMPOSER_NO_AUDIT: 1
 
 jobs:
+  # ===========================================================
+  # JOB 1: CI — Validación profesional del proyecto PHP
+  # ===========================================================
   ci:
     runs-on: ubuntu-latest
 
     steps:
-    # -------------------------------------------------------
-    # Checkout del repositorio usando HTTPS
-    # -------------------------------------------------------
     - name: Checkout Repo
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
 
-    # -------------------------------------------------------
-    # Configurar PHP
-    # -------------------------------------------------------
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
@@ -38,9 +35,7 @@ jobs:
         tools: phpunit
         coverage: none
 
-    # -------------------------------------------------------
-    # Validar composer.json si existe
-    # -------------------------------------------------------
+    # Validar composer.json
     - name: Validate composer.json
       run: |
         if [ -f composer.json ]; then
@@ -49,9 +44,7 @@ jobs:
           echo "No composer.json found — skipping validate"
         fi
 
-    # -------------------------------------------------------
     # Cache de Composer
-    # -------------------------------------------------------
     - name: Cache Composer files
       uses: actions/cache@v3
       with:
@@ -60,9 +53,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-composer-
 
-    # -------------------------------------------------------
-    # Instalar dependencias si existe composer.json
-    # -------------------------------------------------------
+    # Instalar dependencias
     - name: Install Dependencies
       run: |
         if [ -f composer.json ]; then
@@ -71,9 +62,7 @@ jobs:
           echo "No composer.json - skipping composer install"
         fi
 
-    # -------------------------------------------------------
-    # Instalar herramientas de análisis de código
-    # -------------------------------------------------------
+    # Herramientas de análisis de código
     - name: Install PHPStan
       run: |
         wget -q https://github.com/phpstan/phpstan/releases/latest/download/phpstan.phar -O phpstan
@@ -94,9 +83,7 @@ jobs:
         wget -q https://phar.phpunit.de/phpcpd.phar -O phpcpd
         chmod +x phpcpd
 
-    # -------------------------------------------------------
-    # Análisis de calidad de código
-    # -------------------------------------------------------
+    # Análisis de código
     - name: PHPCS (PSR-12)
       run: phpcs --standard=PSR12 . || true
 
@@ -107,16 +94,51 @@ jobs:
       run: phpmd . text cleancode,codesize,design,unusedcode || true
 
     - name: PHPCPD
-      run: ./phpcpd . || true 
+      run: ./phpcpd . || true
 
-    # -------------------------------------------------------
-    # Ejecutar PHPUnit si existen tests
-    # -------------------------------------------------------
+    # PHPUnit
     - name: Run PHPUnit
       run: |
         if [ -f vendor/bin/phpunit ]; then
-          echo "Ejecutando PHPUnit..."
           vendor/bin/phpunit --colors=always || true
         else
           echo "PHPUnit no encontrado — no hay tests aún"
         fi
+
+  # ===========================================================
+  # JOB 2: Docker — Build & Push (solo si CI pasa)
+  # ===========================================================
+  docker:
+    needs: ci
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repo
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    # Login a Docker Hub
+    - name: Login to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    # Configurar Buildx
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    # Construir y subir imagen
+    - name: Build & Push Docker Image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: |
+          ${{ secrets.DOCKERHUB_USERNAME }}/clinica:latest
+          ${{ secrets.DOCKERHUB_USERNAME }}/clinica:${{ github.run_number }}
