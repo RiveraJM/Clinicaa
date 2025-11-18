@@ -1,0 +1,90 @@
+/* ---------- Variables de color ---------- */
+:root{
+  --azul: #007bbf;
+  --celeste: #5ac7e8;
+  --azul-oscuro: #1d359a;
+  --blanco: #ffffff;
+  --gris: #f4f9ff;
+  --texto: #1e2b47;
+  --btn-bg: var(--azul);
+  --btn-color: #fff;
+  --max-width: 1200px;
+}
+
+/* Reset y utilidades */
+*{box-sizing:border-box}
+body{font-family: Inter, Arial, sans-serif; margin:0; color:var(--texto); background:#fff; line-height:1.5}
+.wrap{max-width:var(--max-width); margin:0 auto; padding:30px}
+
+/* Topbar */
+.topbar{background:var(--gris); font-size:14px; border-bottom:1px solid #e1eef9}
+.topbar .wrap{display:flex; justify-content:space-between; align-items:center; padding:8px 20px}
+.topbar .left span{margin-right:18px}
+.btn-cita{background:transparent; color:var(--azul); font-weight:700; text-decoration:none; margin-right:10px}
+
+/* Navbar */
+.navbar{background:#fff; border-bottom:1px solid #eef4fb}
+.nav-inner{display:flex; align-items:center; justify-content:space-between; padding:15px 20px}
+.brand h1{margin:0; font-size:18px; color:var(--azul)}
+.brand span{color:var(--azul-oscuro)}
+nav ul.menu{list-style:none; display:flex; gap:18px; margin:0; padding:0}
+nav ul.menu li a{color:var(--texto); text-decoration:none; padding:8px 6px}
+.menu-reserva{background:var(--btn-bg); color:var(--btn-color); padding:8px 12px; border-radius:6px}
+
+/* Mobile menu toggle */
+.menu-toggle{display:none; background:transparent; border:0; font-size:22px}
+
+/* Hero / Carrusel */
+.hero .carousel{position:relative; overflow:hidden}
+.carousel .slides{display:flex; transition:transform .6s ease}
+.carousel .slide{min-width:100%}
+.carousel img{width:100%; height:520px; object-fit:cover; display:block}
+.carousel-prev, .carousel-next{
+  position:absolute; top:50%; transform:translateY(-50%); background:rgba(0,0,0,0.35);
+  color:white; border:0; padding:10px 14px; font-size:22px; cursor:pointer; border-radius:6px;
+}
+.carousel-prev{left:18px}
+.carousel-next{right:18px}
+.carousel-dots{position:absolute; left:50%; transform:translateX(-50%); bottom:16px; display:flex; gap:8px}
+.carousel-dots button{width:10px; height:10px; border-radius:50%; border:0; background:rgba(255,255,255,0.6); cursor:pointer}
+.carousel-dots button.active{background:var(--btn-bg)}
+
+/* Sections */
+h2{color:var(--azul-oscuro); margin-bottom:18px}
+.grid-3{display:grid; grid-template-columns:repeat(3,1fr); gap:20px}
+.grid-2{display:grid; grid-template-columns:repeat(2,1fr); gap:20px}
+.card, .profile, .post{background:#fff; border:1px solid #eef4fb; padding:18px; border-radius:10px}
+.profile img, .post img{width:100%; height:200px; object-fit:cover; border-radius:8px}
+.profile h4{margin:12px 0 6px}
+.btn{display:inline-block; background:var(--btn-bg); color:var(--btn-color); padding:10px 14px; border-radius:8px; text-decoration:none}
+
+/* Forms */
+.form{max-width:700px}
+.form label{display:block; margin-bottom:12px}
+.form input[type="text"], .form input[type="email"], .form textarea, .form select, .form input[type="date"], .form input[type="time"]{
+  width:100%; padding:10px; border:1px solid #dfe9f4; border-radius:6px; margin-top:6px;
+}
+
+/* Footer */
+.site-footer{background:#f8fafc; padding:30px 0; margin-top:30px}
+.footer-inner{display:flex; gap:20px; justify-content:space-between}
+.footer-inner .col{flex:1}
+.footer-bottom{padding:12px 0; text-align:center; border-top:1px solid #e9f2fb}
+
+/* Alerts */
+.alert{background:#e8f7ee; border-left:4px solid #2ea86b; padding:12px; margin-bottom:16px}
+
+/* WhatsApp float */
+.whatsapp-float{position:fixed; right:18px; bottom:18px; width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 18px rgba(0,0,0,0.15); background:transparent}
+.whatsapp-float img{width:42px; height:42px}
+
+/* Responsive */
+@media (max-width:900px){
+  .grid-3{grid-template-columns:1fr}
+  .grid-2{grid-template-columns:1fr}
+  .menu-toggle{display:block}
+  nav ul.menu{display:none; position:absolute; top:86px; left:0; right:0; background:#fff; flex-direction:column; gap:0; padding:10px 20px}
+  nav ul.menu.show{display:flex}
+  .carousel img{height:360px}
+  .wrap{padding:18px}
+}
