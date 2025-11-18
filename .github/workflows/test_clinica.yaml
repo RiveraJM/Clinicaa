@@ -132,4 +132,4 @@ jobs:
         push: true
         tags: |
           ${{ vars.DOCKERHUB_USERNAME }}/clinica:latest
-          ${{ vars.DOCKERHUB_USERNAME }}/clinica:${{ github.run_number }}
+          ${{ vars.DOCKERHUB_USERNAME }}/clinica:${{ github.run_number }} 
