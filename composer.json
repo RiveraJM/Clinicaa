@@ -1,0 +1,20 @@
+{
+  "name": "clinica",
+  "description": "Sistema de clínica - backend PHP",
+  "type": "project",
+  "require": {
+    "php": ">=8.0"
+  },
+  "autoload": {
+    "classmap": [
+      "controllers/",
+      "config/",
+      "includes/",
+      "api/",
+      "cron/"
+    ]
+  },
+  "scripts": {
+    "test": "phpunit --colors=always --testdox"
+  }
+}

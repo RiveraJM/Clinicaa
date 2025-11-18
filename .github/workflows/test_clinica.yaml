@@ -1,0 +1,151 @@
+name: CI — Clinica (Quality & Tests)
+
+on:
+  push:
+    branches: ["master", "main"]
+  pull_request:
+    branches: ["master", "main"]
+
+permissions:
+  contents: read
+
+env:
+  PROJECT_PATH: .
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup PHP 8.2
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.2'
+        extensions: mbstring, pdo, pdo_mysql
+        tools: phpunit
+        coverage: none
+
+    - name: Validate composer.json
+      working-directory: ${{ env.PROJECT_PATH }}
+      run: |
+        if [ -f composer.json ]; then composer validate --strict; else echo "No composer.json found, skipping validate"; fi
+
+    - name: Cache Composer files
+      uses: actions/cache@v3
+      with:
+        path: |
+          ${{ env.PROJECT_PATH }}/vendor
+          ~/.composer/cache
+        key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-composer-
+
+    - name: Install project dependencies (if any)
+      working-directory: ${{ env.PROJECT_PATH }}
+      run: |
+        if [ -f composer.json ]; then composer install --prefer-dist --no-interaction --no-progress --no-suggest; else echo "No composer.json - skipping composer install"; fi
+
+    # -------------------------------
+    # Install code-quality tools
+    # -------------------------------
+
+    - name: Install PHPStan
+      run: |
+        wget -q https://github.com/phpstan/phpstan/releases/latest/download/phpstan.phar -O phpstan
+        chmod +x phpstan
+
+    - name: Install PHPCS & PHPMD (composer global)
+      run: |
+        composer global require --no-progress --no-interaction squizlabs/php_codesniffer phpmd/phpmd
+        echo "${HOME}/.composer/vendor/bin" >> $GITHUB_PATH
+
+    - name: Install PHPCPD
+      run: |
+        wget -q https://phar.phpunit.de/phpcpd.phar -O phpcpd
+        chmod +x phpcpd
+
+    # -------------------------------
+    # Define folders to analyze
+    # -------------------------------
+    - name: Set analyze paths
+      id: paths
+      run: |
+        echo "paths=api controllers config includes cron" >> $GITHUB_OUTPUT
+
+    # -------------------------------
+    # Run Code Quality Tools
+    # -------------------------------
+
+    - name: Run PHPCS (PSR-12)
+      run: |
+        for d in ${{ steps.paths.outputs.paths }}; do
+          if [ -d "$d" ]; then
+            echo "Running phpcs on $d"
+            phpcs --standard=PSR12 "$d" || true
+          fi
+        done
+
+    - name: Run PHPStan (level 5)
+      run: |
+        for d in ${{ steps.paths.outputs.paths }}; do
+          if [ -d "$d" ]; then
+            echo "Running phpstan on $d"
+            ./phpstan analyse "$d" --level=5 --no-progress --memory-limit=2G --error-format=checkstyle > phpstan-${d}.xml || true
+          fi
+        done
+
+    - name: Run PHPMD (cleancode + unused + design)
+      run: |
+        for d in ${{ steps.paths.outputs.paths }}; do
+          if [ -d "$d" ]; then
+            echo "Running phpmd on $d"
+            phpmd "$d" xml cleancode,codesize,design,unusedcode --reportfile phpmd-${d}.xml || true
+          fi
+        done
+
+    - name: Run PHPCPD (duplicated code)
+      run: |
+        for d in ${{ steps.paths.outputs.paths }}; do
+          if [ -d "$d" ]; then
+            echo "Running phpcpd on $d"
+            ./phpcpd "$d" --log-pmd phpcpd-${d}.xml || true
+          fi
+        done
+
+    # -------------------------------
+    # Run tests (if present)
+    # -------------------------------
+    - name: Run PHPUnit (if tests exist)
+      working-directory: ${{ env.PROJECT_PATH }}
+      run: |
+        if [ -d tests ] || ls | grep -q "phpunit.xml"; then
+          echo "Running PHPUnit"
+          phpunit --colors=always --testdox || true
+        else
+          echo "No tests folder - skipping PHPUnit"
+        fi
+
+    # -------------------------------
+    # Security audit (only if composer.lock exists)
+    # -------------------------------
+    - name: Composer security audit
+      working-directory: ${{ env.PROJECT_PATH }}
+      run: |
+        if [ -f composer.lock ]; then composer audit --format=json > composer-audit.json || true; else echo "{}" > composer-audit.json; fi
+
+    # -------------------------------
+    # Upload artifacts
+    # -------------------------------
+    - name: Upload reports & results
+      uses: actions/upload-artifact@v4
+      with:
+        name: ci-reports
+        path: |
+          phpstan-*.xml
+          phpmd-*.xml
+          phpcpd-*.xml
+          composer-audit.json
+        if-no-files-found: ignore
