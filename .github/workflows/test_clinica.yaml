@@ -1,4 +1,4 @@
-name: CI Clinica 
+name: CI Clinica
 
 on:
   push:
@@ -15,16 +15,19 @@ env:
   COMPOSER_NO_AUDIT: 1
 
 jobs:
-  # ===========================================================
-  # JOB 1: CI — Validación profesional del proyecto PHP
-  # ===========================================================
   ci:
     runs-on: ubuntu-latest
 
     steps:
+    # -------------------------------------------------------
+    # Checkout del código
+    # -------------------------------------------------------
     - name: Checkout Repo
       uses: actions/checkout@v4
 
+    # -------------------------------------------------------
+    # Configurar PHP
+    # -------------------------------------------------------
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
@@ -33,6 +36,9 @@ jobs:
         tools: phpunit
         coverage: none
 
+    # -------------------------------------------------------
+    # Validar composer.json si existe
+    # -------------------------------------------------------
     - name: Validate composer.json
       run: |
         if [ -f composer.json ]; then
@@ -41,6 +47,9 @@ jobs:
           echo "No composer.json found — skipping validate"
         fi
 
+    # -------------------------------------------------------
+    # Cache de Composer
+    # -------------------------------------------------------
     - name: Cache Composer files
       uses: actions/cache@v3
       with:
@@ -49,6 +58,9 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-composer-
 
+    # -------------------------------------------------------
+    # Instalar dependencias si existe composer.json
+    # -------------------------------------------------------
     - name: Install Dependencies
       run: |
         if [ -f composer.json ]; then
@@ -57,7 +69,9 @@ jobs:
           echo "No composer.json - skipping composer install"
         fi
 
-    # ---------- Install tools ----------
+    # -------------------------------------------------------
+    # Instalar herramientas de análisis de código
+    # -------------------------------------------------------
     - name: Install PHPStan
       run: |
         wget -q https://github.com/phpstan/phpstan/releases/latest/download/phpstan.phar -O phpstan
@@ -78,11 +92,13 @@ jobs:
         wget -q https://phar.phpunit.de/phpcpd.phar -O phpcpd
         chmod +x phpcpd
 
-    # ---------- Code Analysis ----------
+    # -------------------------------------------------------
+    # Análisis de calidad de código
+    # -------------------------------------------------------
     - name: PHPCS (PSR-12)
       run: phpcs --standard=PSR12 . || true
 
-    - name: PHPStan (level max)
+    - name: PHPStan (nivel máximo)
       run: ./phpstan analyse . --level=max --no-progress || true
 
     - name: PHPMD
@@ -91,44 +107,13 @@ jobs:
     - name: PHPCPD
       run: ./phpcpd . || true
 
+    # -------------------------------------------------------
+    # Ejecutar PHPUnit si existen tests
+    # -------------------------------------------------------
     - name: Run PHPUnit
       run: |
         if [ -f vendor/bin/phpunit ]; then
           vendor/bin/phpunit || true
         else
           echo "PHPUnit no encontrado — no hay tests aún"
-        fi
-
-
-  # ===========================================================
-  # JOB 2: Docker — Build & Push (solo si CI pasa)
-  # ===========================================================
-  docker:
-    needs: ci          # solo ejecuta si CI fue exitoso
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout Repo
-      uses: actions/checkout@v4
-
-    - name: Login to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ vars.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
-
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Build & Push Docker Image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        file: ./Dockerfile
-        push: true
-        tags: |
-          ${{ vars.DOCKERHUB_USERNAME }}/clinica:latest
-          ${{ vars.DOCKERHUB_USERNAME }}/clinica:${{ github.run_number }} 
+        
