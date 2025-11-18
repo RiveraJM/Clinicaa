@@ -20,10 +20,12 @@ jobs:
 
     steps:
     # -------------------------------------------------------
-    # Checkout del código
+    # Checkout del repositorio usando HTTPS
     # -------------------------------------------------------
     - name: Checkout Repo
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
 
     # -------------------------------------------------------
     # Configurar PHP
@@ -113,7 +115,8 @@ jobs:
     - name: Run PHPUnit
       run: |
         if [ -f vendor/bin/phpunit ]; then
-          vendor/bin/phpunit || true
+          echo "Ejecutando PHPUnit..."
+          vendor/bin/phpunit --colors=always || true
         else
           echo "PHPUnit no encontrado — no hay tests aún"
-        
+        fi
