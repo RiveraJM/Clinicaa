@@ -107,7 +107,7 @@ jobs:
       run: phpmd . text cleancode,codesize,design,unusedcode || true
 
     - name: PHPCPD
-      run: ./phpcpd . || true
+      run: ./phpcpd . || true 
 
     # -------------------------------------------------------
     # Ejecutar PHPUnit si existen tests
