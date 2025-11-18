@@ -17,8 +17,9 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@v4
 
+    # 👇 Entrar al directorio correcto (Clinica)
     - name: Enter project directory
-      run: cd CLINICA && pwd
+      run: cd Clinica && pwd
       shell: bash
 
     - name: Setup PHP
@@ -30,18 +31,18 @@ jobs:
         coverage: none
 
     - name: Validate composer.json
-      run: cd CLINICA && composer validate --strict
+      run: cd Clinica && composer validate --strict
 
     - name: Cache Composer
       uses: actions/cache@v3
       with:
-        path: CLINICA/vendor
-        key: ${{ runner.os }}-composer-${{ hashFiles('CLINICA/composer.lock') }}
+        path: Clinica/vendor
+        key: ${{ runner.os }}-composer-${{ hashFiles('Clinica/composer.lock') }}
         restore-keys: |
           ${{ runner.os }}-composer-
 
     - name: Install dependencies
-      run: cd CLINICA && composer install --prefer-dist --no-interaction --no-progress
+      run: cd Clinica && composer install --prefer-dist --no-interaction --no-progress
 
     # -------------------------
     # Install Tools
@@ -49,7 +50,7 @@ jobs:
 
     - name: Install PHPStan
       run: |
-        cd CLINICA
+        cd Clinica
         wget -q https://github.com/phpstan/phpstan/releases/latest/download/phpstan.phar -O phpstan
         chmod +x phpstan
 
@@ -65,7 +66,7 @@ jobs:
 
     - name: Install PHPCPD
       run: |
-        cd CLINICA
+        cd Clinica
         wget -q https://phar.phpunit.de/phpcpd.phar -O phpcpd
         chmod +x phpcpd
 
@@ -74,16 +75,16 @@ jobs:
     # -------------------------
 
     - name: Run PHPCS (PSR-12)
-      run: phpcs --standard=PSR12 CLINICA || true
+      run: phpcs --standard=PSR12 Clinica || true
 
     - name: Run PHPStan
-      run: cd CLINICA && ./phpstan analyse . --level=max --no-progress || true
+      run: cd Clinica && ./phpstan analyse . --level=max --no-progress || true
 
     - name: Run PHPMD
-      run: phpmd CLINICA text cleancode,codesize,design,unusedcode || true
+      run: phpmd Clinica text cleancode,codesize,design,unusedcode || true
 
     - name: Run PHPCPD
-      run: cd CLINICA && ./phpcpd . || true
+      run: cd Clinica && ./phpcpd . || true
 
     - name: Run PHPUnit
-      run: cd CLINICA && vendor/bin/phpunit || true
+      run: cd Clinica && vendor/bin/phpunit || true
